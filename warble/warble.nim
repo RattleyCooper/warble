@@ -39,28 +39,30 @@ Warble is a command line steganography tool/nim library that can embed files
  into the pixel data of images.
 
   --h                   show this help message.
-  --pr      filepath:   shows the amount of bytes 
+  --pr: filepath        shows the amount of bytes 
                          that can be encode into 
                          the image specified by 
                          the given filepath
+  --s: filepath         shows the file size in
+                         bytes
   
-  --i       filepath:   input image filepath
-  --o       filepath:   output image filepath
-  --p       filepath:   filepath to payload
+  --i: filepath         input image 
+  --o: filepath         output image 
+  --p: filepath         payload
 
 Injecting a payload:
   
   If the --i, --o and --p arguments are set, the payload will be embedded 
    into the input image and saved to the output image filepath.
 
-  `./warble --i=test-files/test0.png --o=test-files/test0-inj.png --p=warble`
+  `./warble --i: test-files/test0.png --o: test-files/test0-inj.png --p: warble`
 
 Extracting a payload:
 
   if the --i and --p arguments are set, the payload will be extracted from the 
    input image and saved to the path given by --p.
 
-  `./warble --i=test-files/test0-inj.png --p=test-files/warble`
+  `./warble --i: test-files/test0-inj.png --p: test-files/warble`
 """
 
 
@@ -122,9 +124,9 @@ proc inject*(inImgPath: string, plPath: string, outImgPath: string) =
   ## Inject the payload into the image and create a new image.
   #
   echo "Inject : \n" 
-  echo "\tInput Image:\t" & inImgPath
-  echo "\tOutput Image:\t" & outImgPath
-  echo "\tPayload Path:\t" & plPath
+  echo "  Input Image:\t" & inImgPath
+  echo "  Output Image:\t" & outImgPath
+  echo "  Payload Path:\t" & plPath
   echo "\nOpening payload..."
   var f: File
   discard f.open(plPath, fmRead)
@@ -149,8 +151,8 @@ proc extract*(inImgPath: string, plPath: string, assertSize: int = 0) =
   #
 
   echo "Extract : \n"
-  echo "\tInput Image:\t" & inImgPath
-  echo "\tPayload Path:\t" & plPath
+  echo "  Input Image:\t" & inImgPath
+  echo "  Payload Path:\t" & plPath
   echo "\nReading image data..."
   var image = readImage(inImgPath)
   echo "Extracting payload..."
@@ -173,6 +175,7 @@ if isMainModule:
   var extracting = false
 
   var profilingPath: string
+  var fileSizePath: string
   var inputImage: string
   var payloadPath: string
   var outputImage: string
@@ -190,8 +193,11 @@ if isMainModule:
         outputImage = expandTilde(val)
       of "pr", "profile":
         profilingPath = expandTilde(val)
+      of "s", "size":
+        fileSizePath = expandTilde(val)
       of "h", "help":
-        continue
+        echo HelpMessage
+        quit(QuitSuccess)
 
   setupApp()
 
@@ -200,17 +206,30 @@ if isMainModule:
   elif inputImage != "" and payloadPath != "":
     extracting = true
 
-  if profilingPath != "":
+  if fileSizePath != "":
+    echo "Opening file :\n"
+    echo "  Input File: \t" & fileSizePath
+    var f: File
+    discard f.open(fileSizePath, fmRead)
+    echo "\nFilesize: " & $f.getFileSize() & " bytes"
+    f.close()
+    quit(QuitSuccess)
+
+  elif profilingPath != "":
     echo $profileImage(profilingPath) & " available bytes..."
+    quit(QuitSuccess)
 
   elif injecting:
     doAssert(inputImage != "", "You must specify an input image filepath with --i=/some/input/img.png")
     doAssert(outputImage != "", "You must specify an output image filepath with --o=/some/path/to/save/injected/img.png")
     doAssert(payloadPath != "", "You must specify a payload filepath with --p=/some/path/to/payload")
     inject(inputImage, payloadPath, outputImage)
+    quit(QuitSuccess)
 
   elif extracting:
     extract(inputImage, payloadPath)
+    quit(QuitSuccess)
 
   else:
     echo HelpMessage
+    quit(QuitSuccess)
