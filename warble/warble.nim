@@ -37,9 +37,9 @@ Warble is a command line steganography tool/nim library that can embed files
 
   --h                   show this help message.
   --pr      filepath:   shows the amount of bytes 
-                        that can be encode into 
-                        the image specified by the 
-                        given filepath
+                         that can be encode into 
+                         the image specified by 
+                         the given filepath
   
   --i       filepath:   input image filepath
   --o       filepath:   output image filepath
