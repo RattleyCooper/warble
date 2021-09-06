@@ -1,6 +1,6 @@
 # Warble
 
-Warble is a commind line steganography tool that can embed files into the pixel data of images.  You can also import warble to use programatically with nim.
+Warble is a command line steganography tool/nim library that can embed files into the pixel data of images.
 
 Encoding/decoding functions based on the steganography library by treeform:
 
@@ -11,6 +11,10 @@ https://github.com/treeform/steganography
 This was made as a proof of concept data infil/exfil tool, but there are legitimate uses as well.  It could be used in game development to embed map data in an image of the map itself.   Games like spore are known to use steganography in a similar way for sharing creatures.
 
 https://nedbatchelder.com/blog/200806/spore_creature_creator_and_steganography.html
+
+## Installation
+
+Download this repository and run `nimble install` in the root directory.
 
 ## Examples
 
