@@ -15,13 +15,50 @@ import parseopt
 import sequtils
 
 
-let TermBytes* = @[     # Don't use const or else bytes
-  4u8, 20u8, 69u8,      # are compiled into binary and
-  0u8, 0u8, 0u8,        # warble cannot be embeded into
-  69u8, 4u8, 20u8,      # an image.
-  255u8, 254u8, 253u8,
-  252u8, 251u8, 250u8 
-]
+let TermBytes* = block:
+  let tchs = @[
+    'W', 'a', 'r', 'b', 'l', 'e',
+    'e', 'l', 'b', 'r', 'a', 'W',
+    'W', 'a', 'r', 'b', 'l', 'e'
+  ]
+  var res: seq[uint8]
+  for ch in tchs:
+    res.add ord(ch).uint8
+  res
+
+
+const HelpMessage = """
+           __   __        ___ 
+|  |  /\  |__) |__) |    |__  
+|/\| /~~\ |  \ |__) |___ |___ 
+
+Warble is a command line steganography tool/nim library that can embed files 
+ into the pixel data of images.
+
+  --h                   show this help message.
+  --pr      filepath:   shows the amount of bytes 
+                        that can be encode into 
+                        the image specified by the 
+                        given filepath
+  
+  --ii      filepath:   input image filepath
+  --oi      filepath:   output image filepath
+  --p       filepath:   filepath to payload
+
+Injecting a payload:
+  
+  If the --ii, --oi and --p arguments are set, the payload will be embedded 
+   into the input image and saved to the output image filepath.
+
+  `./warble --ii=test-files/test0.png --oi=test-files/test0-inj.png --p=warble`
+
+Extracting a payload:
+
+  if the --ii and --p arguments are set, the payload will be extracted from the 
+   input image and saved to the path given by --p.
+
+  `./warble --ii=test-files/test0-inj.png --p=test-files/warble`
+"""
 
 
 proc encodeData*(image: Image, data: seq[uint8]) =
@@ -134,6 +171,8 @@ if isMainModule:
         outputImage = expandTilde(val)
       of "pr", "profile":
         profilingPath = expandTilde(val)
+      of "h", "help":
+        continue
 
   setupApp()
 
@@ -142,20 +181,20 @@ if isMainModule:
   elif inputImage != "" and payloadPath != "":
     extracting = true
 
-  doAssert(profilingPath != "" or injecting or extracting)
-
-
   if profilingPath != "":
     doAssert(injecting == false, "-i flag should not be set when profiling.")
     doAssert(extracting == false, "-e flag should not be set when profiling.")
     echo $profileImage(profilingPath) & " available bytes..."
 
-  if injecting:
+  elif injecting:
     doAssert(injecting != extracting, "You must specify the type of job with -i or -e")
     doAssert(inputImage != "", "You must specify an input image with --ii=/some/input/img.png")
     doAssert(outputImage != "", "You must specify an output image with --oi=/some/path/to/save/injected/img.png")
     inject(inputImage, payloadPath, outputImage)
 
-  if extracting:
+  elif extracting:
     doAssert(injecting != extracting, "You must specify the type of job with -i or -e")
     extract(inputImage, payloadPath)
+
+  else:
+    echo HelpMessage
