@@ -135,7 +135,7 @@ if isMainModule:
       of "p", "payload":
         payloadPath = expandTilde(val)
       of "oi", "outputImage":
-        outputImage = val
+        outputImage = expandTilde(val)
       of "pr", "profile":
         profilingPath = expandTilde(val)
 
