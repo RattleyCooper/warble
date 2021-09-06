@@ -7,6 +7,9 @@
 ## of encoding a string into an image the bytes that make up a file
 ## are encoded instead.
 ## 
+## Todo: Figure out way to encode length of data into the first few bytes
+##        to avoid using a terminating sequence.
+## 
 
 
 import pixie
