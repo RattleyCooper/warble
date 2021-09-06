@@ -29,34 +29,35 @@ Profiling an image to see how many bytes we can fit into it:
 
 * `--pr`    filepath of image you want to profile
 
-### Inject a payload into an image
+## Inject a payload into an image
 
 The following command injects the `warble` binary into one of the test images.
 
 ```
-./warble -i --ii=test-files/test0.png --oi=test-files/test0-inj.png --p=warble
+./warble --ii=test-files/test0.png --oi=test-files/test0-inj.png --p=warble
 Opening payload...
 Payload size: 471928
 Injecting payload... 471928
 ```
 
-* `-i`      tell warble to run in inject mode
 * `--ii`    input image filepath
-* `--oi`    output image filepath for injected image
-* `--p`     input payload to inject into the output image
+* `--oi`    output image filepath
+* `--p`     filepath to payload
 
-### Extract a payload from an image
+If the `--ii`, `--oi` and `--p` arguments are set, the payload will be embedded into the input image and saved to the output image filepath.
 
-The following command extracts the payload from the injected image and names it `warble`
+## Extract a payload from an image
+
+The following command extracts the payload from the input image and saves it to `test-files/warble`
 
 ```
-./warble -e --ii=test-files/test0-inj.png --p=test-files/warble
+./warble --ii=test-files/test0-inj.png --p=test-files/warble
 Extracting payload...
 Payload size: 471928
 Creating payload... 471928
 ```
 
-* `-e`      tell warble to run in extract mode
 * `--ii`    input image filepath
 * `--p`     output payload path
 
+When the `--ii` and `--p` arguments are set the payload will be read from the input image and saved as the file specified by `--p`

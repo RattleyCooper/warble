@@ -15,7 +15,7 @@ import parseopt
 import sequtils
 
 
-let TermBytes* = @[      # Don't use const or else bytes
+let TermBytes* = @[     # Don't use const or else bytes
   4u8, 20u8, 69u8,      # are compiled into binary and
   0u8, 0u8, 0u8,        # warble cannot be embeded into
   69u8, 4u8, 20u8,      # an image.
@@ -126,10 +126,6 @@ if isMainModule:
     #
     for kind, key, val in getOpt():
       case key:
-      of "i", "inject":
-        injecting = true
-      of "e", "extract":
-        extracting = true
       of "ii", "inputImage":
         inputImage = expandTilde(val)
       of "p", "payload":
@@ -139,19 +135,25 @@ if isMainModule:
       of "pr", "profile":
         profilingPath = expandTilde(val)
 
-
   setupApp()
+
+  if inputImage != "" and outputImage != "" and payloadPath != "":
+    injecting = true
+  elif inputImage != "" and payloadPath != "":
+    extracting = true
+
   doAssert(profilingPath != "" or injecting or extracting)
 
+
   if profilingPath != "":
-    doAssert(injecting == false)
-    doAssert(extracting == false)
+    doAssert(injecting == false, "-i flag should not be set when profiling.")
+    doAssert(extracting == false, "-e flag should not be set when profiling.")
     echo $profileImage(profilingPath) & " available bytes..."
 
   if injecting:
     doAssert(injecting != extracting, "You must specify the type of job with -i or -e")
-    doAssert(inputImage != "")
-    doAssert(outputImage != "")
+    doAssert(inputImage != "", "You must specify an input image with --ii=/some/input/img.png")
+    doAssert(outputImage != "", "You must specify an output image with --oi=/some/path/to/save/injected/img.png")
     inject(inputImage, payloadPath, outputImage)
 
   if extracting:
