@@ -41,23 +41,23 @@ Warble is a command line steganography tool/nim library that can embed files
                         the image specified by the 
                         given filepath
   
-  --ii      filepath:   input image filepath
-  --oi      filepath:   output image filepath
+  --i       filepath:   input image filepath
+  --o       filepath:   output image filepath
   --p       filepath:   filepath to payload
 
 Injecting a payload:
   
-  If the --ii, --oi and --p arguments are set, the payload will be embedded 
+  If the --i, --o and --p arguments are set, the payload will be embedded 
    into the input image and saved to the output image filepath.
 
-  `./warble --ii=test-files/test0.png --oi=test-files/test0-inj.png --p=warble`
+  `./warble --i=test-files/test0.png --o=test-files/test0-inj.png --p=warble`
 
 Extracting a payload:
 
-  if the --ii and --p arguments are set, the payload will be extracted from the 
+  if the --i and --p arguments are set, the payload will be extracted from the 
    input image and saved to the path given by --p.
 
-  `./warble --ii=test-files/test0-inj.png --p=test-files/warble`
+  `./warble --i=test-files/test0-inj.png --p=test-files/warble`
 """
 
 
@@ -163,11 +163,11 @@ if isMainModule:
     #
     for kind, key, val in getOpt():
       case key:
-      of "ii", "inputImage":
+      of "i", "inputImage":
         inputImage = expandTilde(val)
       of "p", "payload":
         payloadPath = expandTilde(val)
-      of "oi", "outputImage":
+      of "o", "outputImage":
         outputImage = expandTilde(val)
       of "pr", "profile":
         profilingPath = expandTilde(val)
@@ -182,18 +182,15 @@ if isMainModule:
     extracting = true
 
   if profilingPath != "":
-    doAssert(injecting == false, "-i flag should not be set when profiling.")
-    doAssert(extracting == false, "-e flag should not be set when profiling.")
     echo $profileImage(profilingPath) & " available bytes..."
 
   elif injecting:
-    doAssert(injecting != extracting, "You must specify the type of job with -i or -e")
-    doAssert(inputImage != "", "You must specify an input image with --ii=/some/input/img.png")
-    doAssert(outputImage != "", "You must specify an output image with --oi=/some/path/to/save/injected/img.png")
+    doAssert(inputImage != "", "You must specify an input image filepath with --i=/some/input/img.png")
+    doAssert(outputImage != "", "You must specify an output image filepath with --o=/some/path/to/save/injected/img.png")
+    doAssert(payloadPath != "", "You must specify a payload filepath with --p=/some/path/to/payload")
     inject(inputImage, payloadPath, outputImage)
 
   elif extracting:
-    doAssert(injecting != extracting, "You must specify the type of job with -i or -e")
     extract(inputImage, payloadPath)
 
   else:
