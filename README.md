@@ -20,18 +20,22 @@ Profiling an image to see how many bytes we can fit into it:
 
 * `--pr`    filepath of image you want to profile
 
-### Injecting a payload into an image
+### Inject a payload into an image
 
-`./warble -i --ii=/some/img/path.png --oi=/some/output/img.png --p=/some/payload/to/inject`
+The following command injects the `warble` binary into one of the test images.
+
+`./warble -i --ii=test-files/test0.png --oi=test-files/test0-inj.png --p=warble`
 
 * `-i`      tell warble to run in inject mode
 * `--ii`    input image filepath
 * `--oi`    output image filepath for injected image
 * `--p`     input payload to inject into the output image
 
-### Extracting a payload from an image
+### Extract a payload from an image
 
-`./warble -e --ii=/some/injected/img/path.png --p=/some/payload/path`
+The following command extracts the payload from the injected image and names it `warble`
+
+`./warble -e --ii=test-files/test0-inj.png --p=test-files/warble`
 
 * `-e`      tell warble to run in extract mode
 * `--ii`    input image filepath
