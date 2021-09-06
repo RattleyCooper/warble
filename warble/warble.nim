@@ -131,20 +131,24 @@ proc inject*(inImgPath: string, plPath: string, outImgPath: string): seq[uint8] 
     echo "\nOpening payload..."
   var f: File
   discard f.open(plPath, fmRead)
+  
   if isMainModule: echo "Payload size: " & $f.getFileSize
-
   var bytes = newSeq[uint8](f.getFileSize)
+  
   if isMainModule: echo "Reading payload..."
   discard f.readBytes(bytes, 0, f.getFileSize)
+  
   if isMainModule: echo "Reading image data..."
   var image = readImage(inImgPath)
   doAssert(f.getFileSize < profileImage(image)-TermBytes.len)
   
   if isMainModule: echo "Injecting payload... " & $bytes.len
   encodeData(image, bytes)
+  
   if isMainModule: echo "Writing image payload.."
   image.writeFile(outImgPath)
   f.close()
+  
   if isMainModule: echo "Done."
   result = bytes
 
@@ -157,8 +161,10 @@ proc extract*(inImgPath: string, plPath: string, assertSize: int = 0): seq[uint8
     echo "  Payload Path:\t" & plPath
     echo "\nReading image data..."
   var image = readImage(inImgPath)
+  
   if isMainModule: echo "Extracting payload..."
   var payload = decodeData(image)
+  
   if isMainModule: echo "Payload size: " & $payload.len
   if assertSize > 0:
     doAssert(payload.len == assertSize, "Size of payload did not match the assertSize")
@@ -166,19 +172,23 @@ proc extract*(inImgPath: string, plPath: string, assertSize: int = 0): seq[uint8
   if isMainModule: echo "Creating payload file..."
   var ouf: File
   discard ouf.open(plPath, fmWrite)
+  
   if isMainModule: echo "Writing payload... " & $payload.len
   discard ouf.writeBytes(payload, 0, payload.len)
   ouf.close()
+  
   if isMainModule: echo "Done."
   result = payload
 
 proc fileBytesSize*(fsPath: string): int64 =
-  echo "Opening file :\n"
-  echo "  Input File: \t" & fsPath
+  if isMainModule: 
+    echo "Opening file :\n"
+    echo "  Input File: \t" & fsPath
   var f: File
   discard f.open(fsPath, fmRead)
   let fs = f.getFileSize()
-  echo "\nFilesize: " & $fs & " bytes"
+  
+  if isMainModule: echo "\nFilesize: " & $fs & " bytes"
   f.close()
   fs
 
