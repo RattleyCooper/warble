@@ -14,7 +14,7 @@ https://nedbatchelder.com/blog/200806/spore_creature_creator_and_steganography.h
 
 ## Installation
 
-Download this repository and run `nimble install` in the root directory.
+Download this repository and run `nimble install` in the repository's directory.
 
 ## Examples
 
