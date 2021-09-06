@@ -1,4 +1,6 @@
-# Warble
+<p align="center">
+  <img src="warble/test-files/warble.png">
+</p>
 
 Warble is a command line steganography tool/nim library that can embed files into the pixel data of images.
 
