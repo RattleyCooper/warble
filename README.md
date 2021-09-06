@@ -18,6 +18,8 @@ https://nedbatchelder.com/blog/200806/spore_creature_creator_and_steganography.h
 
 Download this repository and run `nimble install` in the repository's directory.
 
+You can run `nimble test`, to run the tests, but this is not required.
+
 ## Examples
 
 Profiling an image to see how many bytes we can fit into it:
