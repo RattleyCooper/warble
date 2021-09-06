@@ -16,7 +16,10 @@ https://nedbatchelder.com/blog/200806/spore_creature_creator_and_steganography.h
 
 Profiling an image to see how many bytes we can fit into it:
 
-`./warble --pr=/some/img/path.png`
+```
+./warble --pr=test-files/test0.png
+1457985 available bytes
+```
 
 * `--pr`    filepath of image you want to profile
 
@@ -24,7 +27,9 @@ Profiling an image to see how many bytes we can fit into it:
 
 The following command injects the `warble` binary into one of the test images.
 
-`./warble -i --ii=test-files/test0.png --oi=test-files/test0-inj.png --p=warble`
+```
+./warble -i --ii=test-files/test0.png --oi=test-files/test0-inj.png --p=warble
+```
 
 * `-i`      tell warble to run in inject mode
 * `--ii`    input image filepath
@@ -35,7 +40,9 @@ The following command injects the `warble` binary into one of the test images.
 
 The following command extracts the payload from the injected image and names it `warble`
 
-`./warble -e --ii=test-files/test0-inj.png --p=test-files/warble`
+```
+./warble -e --ii=test-files/test0-inj.png --p=test-files/warble
+```
 
 * `-e`      tell warble to run in extract mode
 * `--ii`    input image filepath
