@@ -121,35 +121,51 @@ proc profileImage*(image: Image): int64 =
 proc inject*(inImgPath: string, plPath: string, outImgPath: string) =
   ## Inject the payload into the image and create a new image.
   #
-  echo "Opening payload..."
+  echo "Inject : \n" 
+  echo "\tInput Image:\t" & inImgPath
+  echo "\tOutput Image:\t" & outImgPath
+  echo "\tPayload Path:\t" & plPath
+  echo "\nOpening payload..."
   var f: File
   discard f.open(plPath, fmRead)
   echo "Payload size: " & $f.getFileSize
 
   var bytes = newSeq[uint8](f.getFileSize)
+  echo "Reading payload..."
   discard f.readBytes(bytes, 0, f.getFileSize)
+  echo "Reading image data..."
   var image = readImage(inImgPath)
   doAssert(f.getFileSize < profileImage(image)-TermBytes.len)
   
   echo "Injecting payload... " & $bytes.len
   encodeData(image, bytes)
+  echo "Writing image payload.."
   image.writeFile(outImgPath)
   f.close()
+  echo "Done."
 
-proc extract*(inImgPath: string, plPath: string) =
+proc extract*(inImgPath: string, plPath: string, assertSize: int = 0) =
   ## Extract payload from an image.
   #
 
-  echo "Extracting payload..."
+  echo "Extract : \n"
+  echo "\tInput Image:\t" & inImgPath
+  echo "\tPayload Path:\t" & plPath
+  echo "\nReading image data..."
   var image = readImage(inImgPath)
+  echo "Extracting payload..."
   var payload = decodeData(image)
   echo "Payload size: " & $payload.len
+  if assertSize > 0:
+    doAssert(payload.len == assertSize, "Size of payload did not match the assertSize")
   
+  echo "Creating payload file..."
   var ouf: File
   discard ouf.open(plPath, fmWrite)
-  echo "Creating payload... " & $payload.len
+  echo "Writing payload... " & $payload.len
   discard ouf.writeBytes(payload, 0, payload.len)
   ouf.close()
+  echo "Done."
 
 
 if isMainModule:
