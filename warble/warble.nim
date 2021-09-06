@@ -120,7 +120,7 @@ proc profileImage*(image: Image): int64 =
   #
   result = ((image.width * image.height) div 4) - TermBytes.len
 
-proc inject*(inImgPath: string, plPath: string, outImgPath: string) =
+proc inject*(inImgPath: string, plPath: string, outImgPath: string): seq[uint8] =
   ## Inject the payload into the image and create a new image.
   #
   echo "Inject : \n" 
@@ -145,8 +145,9 @@ proc inject*(inImgPath: string, plPath: string, outImgPath: string) =
   image.writeFile(outImgPath)
   f.close()
   echo "Done."
+  result = bytes
 
-proc extract*(inImgPath: string, plPath: string, assertSize: int = 0) =
+proc extract*(inImgPath: string, plPath: string, assertSize: int = 0): seq[uint8] =
   ## Extract payload from an image.
   #
 
@@ -168,7 +169,7 @@ proc extract*(inImgPath: string, plPath: string, assertSize: int = 0) =
   discard ouf.writeBytes(payload, 0, payload.len)
   ouf.close()
   echo "Done."
-
+  result = payload
 
 if isMainModule:
   var injecting = false
@@ -223,11 +224,11 @@ if isMainModule:
     doAssert(inputImage != "", "You must specify an input image filepath with --i=/some/input/img.png")
     doAssert(outputImage != "", "You must specify an output image filepath with --o=/some/path/to/save/injected/img.png")
     doAssert(payloadPath != "", "You must specify a payload filepath with --p=/some/path/to/payload")
-    inject(inputImage, payloadPath, outputImage)
+    discard inject(inputImage, payloadPath, outputImage)
     quit(QuitSuccess)
 
   elif extracting:
-    extract(inputImage, payloadPath)
+    discard extract(inputImage, payloadPath)
     quit(QuitSuccess)
 
   else:
