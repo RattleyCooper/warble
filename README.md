@@ -29,6 +29,9 @@ The following command injects the `warble` binary into one of the test images.
 
 ```
 ./warble -i --ii=test-files/test0.png --oi=test-files/test0-inj.png --p=warble
+Opening payload...
+Payload size: 471928
+Injecting payload... 471928
 ```
 
 * `-i`      tell warble to run in inject mode
@@ -42,6 +45,9 @@ The following command extracts the payload from the injected image and names it 
 
 ```
 ./warble -e --ii=test-files/test0-inj.png --p=test-files/warble
+Extracting payload...
+Payload size: 471928
+Creating payload... 471928
 ```
 
 * `-e`      tell warble to run in extract mode
