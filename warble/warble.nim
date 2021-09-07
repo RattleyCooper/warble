@@ -104,10 +104,18 @@ proc decodeData*(image: Image): seq[uint8] =
     dataByte += (c2.b and 0b1) shl 7
 
     if result.len >= TermBytes.len:
-      if result[^TermBytes.len..result.len-1] == TermBytes:
-        result = result[0..^TermBytes.len+1]
+      if result[^TermBytes.len..(result.len - 1)] == TermBytes:
+        result = result[0..^(TermBytes.len + 1)]
         break
+        
     result.add(dataByte)
+
+  # Needed in case decoded data takes up entire space that 
+  # can fit into the image.
+  if result[^TermBytes.len..(result.len - 1)] == TermBytes:
+    result = result[0..^(TermBytes.len + 1)]
+
+
 
 proc profileImage*(inImgPath: string): int64 =
   ## The amount of bytes can be stored inside an image.
@@ -140,7 +148,7 @@ proc inject*(inImgPath: string, plPath: string, outImgPath: string): seq[uint8] 
   
   if isMainModule: echo "Reading image data..."
   var image = readImage(inImgPath)
-  doAssert(f.getFileSize < profileImage(image)-TermBytes.len)
+  doAssert(f.getFileSize <= profileImage(image))
   
   if isMainModule: echo "Injecting payload... " & $bytes.len
   encodeData(image, bytes)
@@ -164,7 +172,7 @@ proc extract*(inImgPath: string, plPath: string, assertSize: int = 0): seq[uint8
   
   if isMainModule: echo "Extracting payload..."
   var payload = decodeData(image)
-  
+
   if isMainModule: echo "Payload size: " & $payload.len
   if assertSize > 0:
     doAssert(payload.len == assertSize, "Size of payload did not match the assertSize")
