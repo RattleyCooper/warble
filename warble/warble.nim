@@ -117,8 +117,6 @@ proc decodeData*(image: Image): seq[uint8] =
   if result[^TermBytes.len..(result.len - 1)] == TermBytes:
     result = result[0..^(TermBytes.len + 1)]
 
-
-
 proc profileImage*(inImgPath: string): int64 =
   ## The amount of bytes can be stored inside an image.
   #
@@ -250,9 +248,6 @@ if isMainModule:
     quit(QuitSuccess)
 
   elif injecting:
-    doAssert(inputImage != "", "You must specify an input image filepath with --i=/some/input/img.png")
-    doAssert(outputImage != "", "You must specify an output image filepath with --o=/some/path/to/save/injected/img.png")
-    doAssert(payloadPath != "", "You must specify a payload filepath with --p=/some/path/to/payload")
     discard inject(inputImage, payloadPath, outputImage)
     quit(QuitSuccess)
 
