@@ -1,12 +1,7 @@
 ##
-## Example of how to embed any arbitrary file into an image's 
-## pixels.
-## 
-## Shoutout to treeform on github for providing the pixie library
-## along with the steganography library that this is based on. Instead
-## of encoding a string into an image the bytes that make up a file
-## are encoded instead.
-## 
+## Library and command line utility for embedding/extracting files into 
+## the pixel data of an image.
+##
 ## Todo: Figure out way to encode length of data into the first few bytes
 ##        to avoid using a terminating sequence.
 ## 
