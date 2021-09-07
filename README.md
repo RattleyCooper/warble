@@ -37,9 +37,19 @@ The following command injects the `warble` binary into one of the test images.
 
 ```
 ./warble --i: test-files/test2.png --o: test-files/test2-inj.png --p: warble
+Inject : 
+
+  Input Image:	test-files/test2.png
+  Output Image:	test-files/test2-inj.png
+  Payload Path:	warble
+
 Opening payload...
-Payload size: 471928
-Injecting payload... 471928
+Payload size: 521624
+Reading payload...
+Reading image data...
+Injecting payload... 521624
+Writing image payload..
+Done.
 ```
 
 * `--i: filepath`    input image filepath
@@ -54,9 +64,17 @@ The following command extracts the payload from the input image and saves it to 
 
 ```
 ./warble --i: test-files/test2-inj.png --p: test-files/warble
+Extract : 
+
+  Input Image:	test-files/test2-inj.png
+  Payload Path:	test-files/warble
+
+Reading image data...
 Extracting payload...
-Payload size: 471928
-Creating payload... 471928
+Payload size: 521624
+Creating payload file...
+Writing payload... 521624
+Done.
 ```
 
 * `--i: filepath`    input image filepath
