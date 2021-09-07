@@ -148,7 +148,10 @@ proc inject*(inImgPath: string, plPath: string, outImgPath: string): seq[uint8] 
   
   if isMainModule: echo "Reading image data..."
   var image = readImage(inImgPath)
-  doAssert(f.getFileSize <= profileImage(image))
+  doAssert(
+    f.getFileSize <= profileImage(image),
+    "Cannot fit payload into the given image."
+  )
   
   if isMainModule: echo "Injecting payload... " & $bytes.len
   encodeData(image, bytes)
