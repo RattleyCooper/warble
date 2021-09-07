@@ -2,7 +2,7 @@
   <img src="warble/test-files/warble.png">
 </p>
 
-Warble is a command line steganography tool/nim library that can embed files into the pixel data of images.
+Warble is a tiny command line steganography tool/nim library that can embed files into the pixel data of images.
 
 Encoding/decoding functions based on the steganography library by treeform:
 
