@@ -37,6 +37,11 @@ The following command injects the `warble` binary into one of the test images.
 
 ```
 ./warble --i: test-files/test2.png --o: test-files/test2-inj.png --p: warble
+```
+
+Output
+
+```
 Inject : 
 
   Input Image:	test-files/test2.png
@@ -64,6 +69,11 @@ The following command extracts the payload from the input image and saves it to 
 
 ```
 ./warble --i: test-files/test2-inj.png --p: test-files/warble
+```
+
+Output
+
+```
 Extract : 
 
   Input Image:	test-files/test2-inj.png
