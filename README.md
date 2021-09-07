@@ -8,17 +8,27 @@ Encoding/decoding functions based on the steganography library by treeform:
 
 https://github.com/treeform/steganography
 
+## Installation / Compiling
+
+For use as a nim library, download this repository and run `nimble install` in the repository's directory.
+
+You can run `nimble test`, to run the tests, but this is not required.
+
+If you wish to use this as an executable, get the nim compiler from https://nim-lang.org/install.html and run the following in the warble directory:
+
+`nim c -d:release -d:danger --opt:speed warble.nim`
+
+If you are on linux and want to read JPG images, run the following in the warble directory:
+
+`nim c -d:release -d:danger -d:pixieUseStb --opt:speed warble.nim`
+
+Note that warble is limited to the image formats that [`pixie`](https://github.com/treeform/pixie) can work with.
+
 ## Uses
 
 This was made as a proof of concept data infil/exfil tool, but there are legitimate uses as well.  It could be used in game development to embed map data in an image of the map itself.   Games like spore are known to use steganography in a similar way for sharing creatures.
 
 https://nedbatchelder.com/blog/200806/spore_creature_creator_and_steganography.html
-
-## Installation
-
-Download this repository and run `nimble install` in the repository's directory.
-
-You can run `nimble test`, to run the tests, but this is not required.
 
 ## Examples
 
