@@ -113,7 +113,9 @@ proc decodeData*(image: Image): seq[uint8] =
     result.add(dataByte)
 
   # Needed in case decoded data takes up entire space that 
-  # can fit into the image.
+  # can fit into the image and the very last bytes are
+  # the termination bytes. Without this check the result
+  # will include the TermBytes at the end of the sequence.
   if result[^TermBytes.len..(result.len - 1)] == TermBytes:
     result = result[0..^(TermBytes.len + 1)]
 
