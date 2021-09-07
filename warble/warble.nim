@@ -38,6 +38,8 @@ const HelpMessage = """
 Warble is a command line steganography tool/nim library that can embed files 
  into the pixel data of images.
 
+    https://github.com/RattleyCooper/warble
+
   --h                   show this help message.
   --pr: filepath        shows the amount of bytes 
                          that can be encode into 
