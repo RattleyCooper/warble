@@ -22,29 +22,29 @@ You can run `nimble test`, to run the tests, but this is not required.
 
 ## Examples
 
-Profiling an image to see how many bytes we can fit into it:
+Profiling an image to see exactly how many bytes we can fit into it:
 
 ```
-./warble --pr=test-files/test0.png
+./warble --pr: test-files/test0.png
 1457985 available bytes
 ```
 
-* `--pr`    filepath of image you want to profile
+* `--pr: filepath`    filepath of image you want to profile
 
 ## Inject a payload into an image
 
 The following command injects the `warble` binary into one of the test images.
 
 ```
-./warble --i=test-files/test0.png --o=test-files/test0-inj.png --p=warble
+./warble --i: test-files/test2.png --o: test-files/test2-inj.png --p: warble
 Opening payload...
 Payload size: 471928
 Injecting payload... 471928
 ```
 
-* `--i`    input image filepath
-* `--o`    output image filepath
-* `--p`     filepath to payload
+* `--i: filepath`    input image filepath
+* `--o: filepath`    output image filepath
+* `--p: filepath`     filepath to payload
 
 If the `--i`, `--o` and `--p` arguments are set, the payload will be embedded into the input image and saved to the output image filepath.
 
@@ -53,13 +53,13 @@ If the `--i`, `--o` and `--p` arguments are set, the payload will be embedded in
 The following command extracts the payload from the input image and saves it to `test-files/warble`
 
 ```
-./warble --i=test-files/test0-inj.png --p=test-files/warble
+./warble --i: test-files/test2-inj.png --p: test-files/warble
 Extracting payload...
 Payload size: 471928
 Creating payload... 471928
 ```
 
-* `--i`    input image filepath
-* `--p`     output payload path
+* `--i: filepath`    input image filepath
+* `--p: filepath`     output payload path
 
 When the `--i` and `--p` arguments are set the payload will be read from the input image and saved as the file specified by `--p`
