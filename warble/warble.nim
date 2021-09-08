@@ -201,14 +201,15 @@ proc fileBytesSize*(fsPath: string): int64 =
   fs
 
 if isMainModule:
-  var injecting = false
-  var extracting = false
+  var 
+    injecting = false
+    extracting = false
 
-  var profilingPath: string
-  var fileSizePath: string
-  var inputImage: string
-  var payloadPath: string
-  var outputImage: string
+    profilingPath: string
+    fileSizePath: string
+    inputImage: string
+    payloadPath: string
+    outputImage: string
 
   proc setupApp() =
     ## Set up application
