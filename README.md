@@ -10,7 +10,7 @@ https://github.com/treeform/steganography
 
 ## Installation / Compiling
 
-For use as a nim library, download this repository and run `nimble install` in the repository's directory.
+For use as a nim library, download this repository and run `nimble install` in the repository's directory or run `nimble install https://github.com/RattleyCooper/warble`
 
 You can run `nimble test`, to run the tests, but this is not required.
 
