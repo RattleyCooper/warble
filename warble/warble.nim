@@ -10,20 +10,6 @@
 import pixie
 import os
 import parseopt
-import sequtils
-
-
-let TermBytes* = block:
-  let tchs = @[
-    'W', 'a', 'r', 'b', 'l', 'e',
-    'e', 'l', 'b', 'r', 'a', 'W',
-    'W', 'a', 'r', 'b', 'l', 'e'
-  ]
-  var res: seq[uint8]
-  for ch in tchs:
-    res.add ord(ch).uint8
-  res
-
 
 const HelpMessage = """
            __   __        ___ 
@@ -66,7 +52,16 @@ Extracting a payload:
 proc encodeData*(image: Image, data: seq[uint8]) =
   ## Hide data inside an image
   #
-  var ndata = data.concat(TermBytes)
+
+  # Prepend the data length to the data.
+  var dataLen: int64 = data.len()
+  var dataLenSeq: seq[uint8] = newSeq[uint8](8)
+  copyMem(addr dataLenSeq[0], unsafeAddr dataLen, sizeOf(dataLen))
+  var ndata: seq[uint8]
+  ndata.add dataLenSeq
+  ndata.add data
+
+  # Encode all of the data
   for i in 0..ndata.len-1:
     var dataByte: uint8 = ndata[i]
     if i >= ndata.len:
@@ -88,7 +83,11 @@ proc encodeData*(image: Image, data: seq[uint8]) =
 proc decodeData*(image: Image): seq[uint8] =
   ## Extract hidden data in the image
   #
-  for i in 0..<(image.data.len div 4):
+
+  # Extract the data's length.
+  var dataLen: int64
+  var dataLenBytes: seq[uint8] = newSeq[uint8](8)
+  for i in 0..7:
     var dataByte: uint8
     let
       c1 = image.data[i*2+0]
@@ -100,30 +99,38 @@ proc decodeData*(image: Image): seq[uint8] =
     dataByte += (c2.g and 0b1) shl 6
     dataByte += (c2.b and 0b1) shl 7
 
-    if result.len >= TermBytes.len:
-      if result[^TermBytes.len..(result.len - 1)] == TermBytes:
-        result = result[0..^(TermBytes.len + 1)]
-        break
+    dataLenBytes[i] = dataByte
+  
+  copyMem(addr dataLen, unsafeAddr dataLenBytes[0], sizeof(dataLen))
+
+  # Extract data from image.
+  for i in 8..<(image.data.len div 4):
+    var dataByte: uint8
+    let
+      c1 = image.data[i*2+0]
+      c2 = image.data[i*2+1]
+    dataByte += (c1.r and 0b1) shl 0
+    dataByte += (c1.g and 0b11) shl 1
+    dataByte += (c1.b and 0b1) shl 3
+    dataByte += (c2.r and 0b11) shl 4
+    dataByte += (c2.g and 0b1) shl 6
+    dataByte += (c2.b and 0b1) shl 7
+
+    if result.len >= dataLen:
+      break
         
     result.add(dataByte)
-
-  # Needed in case decoded data takes up entire space that 
-  # can fit into the image and the very last bytes are
-  # the termination bytes. Without this check the result
-  # will include the TermBytes at the end of the sequence.
-  if result[^TermBytes.len..(result.len - 1)] == TermBytes:
-    result = result[0..^(TermBytes.len + 1)]
 
 proc profileImage*(inImgPath: string): int64 =
   ## The amount of bytes can be stored inside an image.
   #
   var image = readImage(inImgPath)
-  result = ((image.width * image.height) div 4) - TermBytes.len
+  result = ((image.width * image.height) div 4) - 8
 
 proc profileImage*(image: Image): int64 =
   ## The amount of bytes can be stored inside an image.
   #
-  result = ((image.width * image.height) div 4) - TermBytes.len
+  result = ((image.width * image.height) div 4) - 8
 
 proc inject*(inImgPath: string, plPath: string, outImgPath: string): seq[uint8] =
   ## Inject the payload into the image and create a new image.
