@@ -52,6 +52,21 @@ type
     dataPos: int
     data: seq[uint8]
 
+proc isWav*(filepath: string): bool =
+  ## Check for the RIFF header of a wav file and return
+  ## true if it's found.
+  let fs = newFileStream(filepath, fmRead)
+  if fs == nil:
+    if isMainModule:
+      echo "Could not open ", filepath
+    quit QuitFailure
+
+  var header: string = newString(4)
+  discard fs.readDataStr(header, 0..3)
+  if header == "RIFF":
+    return true
+  return false
+
 proc decodeWav*(wav: Wav): seq[uint8] =
   ## Decodes the payload embedded in the LSB of the WAV file's data chunk.
   ## Returns the decoded payload as a sequence of bytes.
@@ -59,7 +74,7 @@ proc decodeWav*(wav: Wav): seq[uint8] =
   var payloadLenBytes: array[8, uint8]  # To store the 8-byte payload length
   var payloadLen: int64 = 0
 
-  # Extract the payload length (8 bytes = 64 bits)
+  # Extract the payload length (8 bytes)
   for i in 0..<8:
     for j in 0..<8:
       let sampleIndex = bitIndex * 4  # Each sample is 4 bytes
@@ -91,6 +106,8 @@ proc decodeWav*(wav: Wav): seq[uint8] =
   return payload
 
 proc saveDecodedPayload*(payload: seq[uint8], outputFile: string) =
+  ## Save the payload to the filepath.
+  ## 
   var f: File
   discard f.open(outputFile, fmWrite)
   defer: f.close()
@@ -98,6 +115,8 @@ proc saveDecodedPayload*(payload: seq[uint8], outputFile: string) =
   discard f.writeBytes(payload, 0, payload.len)
 
 proc extractWavData*(filename: string): Wav =
+  ## Extract the payload from the given wav file.
+  ## 
   result = Wav(filename: "", dataPos: 0, data: newSeq[uint8]())
   result.filename = filename
 
@@ -126,11 +145,18 @@ proc extractWavData*(filename: string): Wav =
 
   raise newException(IOError, "No data chunk found")
 
+proc profileWav*(wavPath: string): int64 =
+  var w = extractWavData(wavPath)
+  result = (w.data.len div 4) div 8
+  if isMainModule: echo "Data Cap: ", result
+
 proc encodeWav*(wav: Wav, plPath: string, newPath: string): Wav =
   var f: File
   discard f.open(plPath, fmRead)
   defer: f.close()
 
+  # Create the payload with the length of the payload 
+  # added to the beginning of the payload bytes.
   var dataLen: int64 = f.getFileSize()
   var dataLenSeq: seq[uint8] = newSeq[uint8](8)
   copyMem(addr dataLenSeq[0], unsafeAddr dataLen, sizeOf(dataLen))
@@ -140,6 +166,7 @@ proc encodeWav*(wav: Wav, plPath: string, newPath: string): Wav =
   if isMainModule:
     echo "Payload size: " & $dataLen
     echo "Reading payload..."
+
   var pdat = newSeq[uint8](f.getFileSize())
   discard f.readBytes(pdat, 0, f.getFileSize())
   payload.add pdat
@@ -168,19 +195,24 @@ proc encodeWav*(wav: Wav, plPath: string, newPath: string): Wav =
       bitIndex += 1
 
   # Write modified WAV data to a new file
-  var nf: File
+  var nf: File # New wav file
   discard nf.open(newPath, fmWrite)
   defer: nf.close()
 
-  var olf: File
+  var olf: File # Old wav file
   discard olf.open(wav.filename, fmRead)
   defer: olf.close()
 
+  # Write the header/fmt chunk to the new wav file
   var preData = newSeq[uint8](wav.dataPos + 1)
   discard olf.readBytes(preData, 0, wav.dataPos + 1)
   discard nf.writeBytes(preData, 0, preData.len - 1)
+  
+  # Write the data chunk to new wav file.
   discard nf.writeBytes(wav.data, 0, wav.data.len)
 
+  # Check for data after the data chunk and
+  # write it to the new wav file if it exists
   let fs = olf.getFileSize()
   if fs > wav.dataPos + wav.data.len + 1:
     let remainder = fs - (wav.dataPos + 1 + wav.data.len)
@@ -261,24 +293,6 @@ proc decodeData*(image: Image): seq[uint8] =
       break
         
     result.add(dataByte)
-
-proc profileWav*(wavPath: string): int64 =
-  var w = extractWavData(wavPath)
-  result = (w.data.len div 4) div 8
-  if isMainModule: echo "Data Cap: ", result
-
-proc isWav*(filepath: string): bool =
-  let fs = newFileStream(filepath, fmRead)
-  if fs == nil:
-    if isMainModule:
-      echo "Could not open ", filepath
-    quit QuitFailure
-
-  var header: string = newString(4)
-  discard fs.readDataStr(header, 0..3)
-  if header == "RIFF":
-    return true
-  return false
 
 proc profileImage*(inImgPath: string): int64 =
   ## The amount of bytes can be stored inside an image.
@@ -361,10 +375,9 @@ proc fileBytesSize*(fsPath: string): int64 =
   var f: File
   discard f.open(fsPath, fmRead)
   defer: f.close()
-  let fs = f.getFileSize()
+  result = f.getFileSize()
   
-  if isMainModule: echo "\nFilesize: " & $fs & " bytes"
-  fs
+  if isMainModule: echo "\nFilesize: " & $result & " bytes"
 
 if isMainModule:
   var 
