@@ -12,9 +12,6 @@ proc encodeData*(image: Image, data: seq[uint8]) =
   ndata.add dataLenSeq
   ndata.add data
 
-  echo "Payload Size: ", dataLen
-  echo "Total Size: ", ndata.len()
-
   # Encode all of the data
   for i in 0..ndata.len-1:
     var dataByte: uint8 = ndata[i]
@@ -56,10 +53,9 @@ proc decodeData*(image: Image): seq[uint8] =
     dataLenBytes[i] = dataByte
   
   copyMem(addr dataLen, unsafeAddr dataLenBytes[0], sizeof(dataLen))
-  echo "Decoded Size: ", dataLen
 
   # Extract data from image.
-  for i in 8..<(image.data.len ):
+  for i in 8..<(image.data.len):
     var dataByte: uint8
     let
       c1 = image.data[i*2+0]
