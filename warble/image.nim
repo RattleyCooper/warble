@@ -94,63 +94,62 @@ proc profileImage*(inImgPath: string): int64 =
 proc inject*(inImgPath: string, plPath: string, outImgPath: string): seq[uint8] =
   ## Inject the payload into the image and create a new image.
   #
-  if isMainModule:
-    echo "Inject : \n" 
-    echo "  Input Image:\t" & inImgPath
-    echo "  Output Image:\t" & outImgPath
-    echo "  Payload Path:\t" & plPath
-    echo "\nOpening payload..."
+  echo "Inject : \n" 
+  echo "  Input Image:\t" & inImgPath
+  echo "  Output Image:\t" & outImgPath
+  echo "  Payload Path:\t" & plPath
+  echo "\nOpening payload..."
   var f: File
   discard f.open(plPath, fmRead)
   
-  if isMainModule: echo "Payload size: " & $f.getFileSize
+  echo "Payload size: " & $f.getFileSize
   var bytes = newSeq[uint8](f.getFileSize)
   
-  if isMainModule: echo "Reading payload..."
+  echo "Reading payload..."
   discard f.readBytes(bytes, 0, f.getFileSize)
   
-  if isMainModule: echo "Reading image data..."
+  echo "Reading image data..."
   var image = readImage(inImgPath)
   doAssert(
     f.getFileSize <= profileImage(image),
     "Cannot fit payload into the given image."
   )
   
-  if isMainModule: echo "Injecting payload... " & $bytes.len
+  echo "Injecting payload... " & $bytes.len
   encodeData(image, bytes)
   
-  if isMainModule: echo "Writing image payload.."
+  echo "Writing image payload.."
   image.writeFile(outImgPath)
   f.close()
   
-  if isMainModule: echo "Done."
+  echo "Done."
   result = bytes
 
 proc extract*(inImgPath: string, plPath: string, assertSize: int = 0): seq[uint8] =
   ## Extract payload from an image.
   #
-  if isMainModule:
-    echo "Extract : \n"
-    echo "  Input Image:\t" & inImgPath
-    echo "  Payload Path:\t" & plPath
-    echo "\nReading image data..."
+
+  echo "Extract : \n"
+  echo "  Input Image:\t" & inImgPath
+  echo "  Payload Path:\t" & plPath
+  echo "\nReading image data..."
   var image = readImage(inImgPath)
   
-  if isMainModule: echo "Extracting payload..."
+  echo "Extracting payload..."
   var payload = decodeData(image)
 
-  if isMainModule: echo "Payload size: " & $payload.len
+  echo "Payload size: " & $payload.len
   if assertSize > 0:
     doAssert(payload.len == assertSize, "Size of payload did not match the assertSize")
   
-  if isMainModule: echo "Creating payload file..."
+  echo "Creating payload file..."
   var ouf: File
   discard ouf.open(plPath, fmWrite)
   
-  if isMainModule: echo "Writing payload... " & $payload.len
+  echo "Writing payload... " & $payload.len
   discard ouf.writeBytes(payload, 0, payload.len)
   ouf.close()
   
-  if isMainModule: echo "Done."
+  echo "Done."
   result = payload
 
