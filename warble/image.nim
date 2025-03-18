@@ -55,7 +55,7 @@ proc decodeData*(image: Image): seq[uint8] =
   copyMem(addr dataLen, unsafeAddr dataLenBytes[0], sizeof(dataLen))
 
   # Extract data from image.
-  for i in 8..<(image.data.len div 4):
+  for i in 8..<(image.data.len):
     var dataByte: uint8
     let
       c1 = image.data[i*2+0]
