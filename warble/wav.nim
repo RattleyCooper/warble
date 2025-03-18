@@ -88,8 +88,16 @@ proc extractWavData*(filename: string): Wav =
   raise newException(IOError, "No data chunk found")
 
 proc profileWav*(wavPath: string): int64 =
+  ## Calculates the amount of data (in bytes) that can be stored inside a 32-bit WAV file.
+  ## Reserves 8 bytes for an int64 length header.
+  ##
   var w = extractWavData(wavPath)
-  result = (w.data.len div 4) div 8
+  let totalBits = w.data.len div 4
+  let availableBits = totalBits - 64
+  if availableBits < 0:
+    raise newException(ValueError, "WAV file is too small to store the length header.")
+
+  result = availableBits div 8
   echo "Data Cap: ", result
 
 proc encodeWav*(wav: Wav, plPath: string, newPath: string): Wav =
