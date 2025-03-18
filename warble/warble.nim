@@ -120,6 +120,11 @@ if isMainModule:
 
   elif injecting:
     if inputImage.isWav():
+      echo "Inject : \n" 
+      echo "  Input Wav:\t" & inputImage
+      echo "  Output Wav:\t" & outputImage
+      echo "  Payload Path:\t" & payloadPath
+      echo "Reading wav data..."
       var w = extractWavData(inputImage)
       discard inputImage.profileWav()
       w = w.encodeWav(payloadPath, outputImage)
@@ -129,9 +134,15 @@ if isMainModule:
 
   elif extracting:
     if inputImage.isWav():
+      echo "Extract : \n"
+      echo "  Input Image:\t" & inputImage
+      echo "  Payload Path:\t" & payloadPath
+      echo "\nReading wav data..."
       var w = extractWavData(inputImage)
       let payload = w.decodeWav()
+      echo "Saving payload..."
       payload.save(payloadPath)
+      echo "Done."
     else:
       discard extract(inputImage, payloadPath)
     quit(QuitSuccess)
