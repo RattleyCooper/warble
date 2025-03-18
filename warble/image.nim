@@ -72,16 +72,24 @@ proc decodeData*(image: Image): seq[uint8] =
         
     result.add(dataByte)
 
-proc profileImage*(inImgPath: string): int64 =
-  ## The amount of bytes can be stored inside an image.
-  #
-  var image = readImage(inImgPath)
-  result = ((image.width * image.height) div 4) - 8
-
 proc profileImage*(image: Image): int64 =
   ## The amount of bytes can be stored inside an image.
   #
-  result = ((image.width * image.height) div 4) - 8
+  let totalBits = image.width * image.height * 3
+  let availableBits = totalBits - 64 # int64
+
+  if availableBits < 0:
+    raise newException(ValueError, "Image is too small to store the length header.")
+
+  result = availableBits div 8
+
+proc profileImage*(inImgPath: string): int64 =
+  ## Calculates the amount of data (in bytes) that can be stored inside an image.
+  ## - Only RGB channels are used (3 bits per pixel).
+  ## - The first 8 bytes are reserved for storing the length of the data as an int64.
+  ##
+  var image = readImage(inImgPath)
+  image.profileImage()
 
 proc inject*(inImgPath: string, plPath: string, outImgPath: string): seq[uint8] =
   ## Inject the payload into the image and create a new image.
