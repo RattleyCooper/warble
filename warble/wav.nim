@@ -11,8 +11,7 @@ proc isWav*(filepath: string): bool =
   ## true if it's found.
   let fs = newFileStream(filepath, fmRead)
   if fs == nil:
-    if isMainModule:
-      echo "Could not open ", filepath
+    echo "Could not open ", filepath
     quit QuitFailure
 
   var header: string = newString(4)
@@ -42,9 +41,8 @@ proc decodeWav*(wav: Wav): seq[uint8] =
   # Convert the 8-byte array to an int64
   copyMem(addr payloadLen, addr payloadLenBytes[0], 8)
 
-  if isMainModule:
-    echo "Decoded payload length: ", payloadLen
-
+  echo "Payload size: " & $payloadLen
+  echo "Extracting payload..."
   # Extract the payload
   var payload: seq[uint8] = newSeq[uint8](payloadLen)
   for i in 0..<payloadLen:
@@ -87,19 +85,19 @@ proc extractWavData*(filename: string): Wav =
       return
 
     fs.setPosition(fs.getPosition() + chunkSize)  # Skip to next chunk
-
   raise newException(IOError, "No data chunk found")
 
 proc profileWav*(wavPath: string): int64 =
   var w = extractWavData(wavPath)
   result = (w.data.len div 4) div 8
-  if isMainModule: echo "Data Cap: ", result
+  echo "Data Cap: ", result
 
 proc encodeWav*(wav: Wav, plPath: string, newPath: string): Wav =
   var f: File
   discard f.open(plPath, fmRead)
   defer: f.close()
 
+  echo "Payload size: " & $f.getFileSize
   # Create the payload with the length of the payload 
   # added to the beginning of the payload bytes.
   var dataLen: int64 = f.getFileSize()
@@ -108,10 +106,7 @@ proc encodeWav*(wav: Wav, plPath: string, newPath: string): Wav =
   var payload: seq[uint8]
   payload.add dataLenSeq
 
-  if isMainModule:
-    echo "Payload size: " & $dataLen
-    echo "Reading payload..."
-
+  echo "Reading payload..."
   var pdat = newSeq[uint8](f.getFileSize())
   discard f.readBytes(pdat, 0, f.getFileSize())
   payload.add pdat
@@ -119,6 +114,7 @@ proc encodeWav*(wav: Wav, plPath: string, newPath: string): Wav =
   if payload.len * 8 > wav.data.len div 4:  # 32-bit samples (4 bytes per sample)
     raise newException(ValueError, "Not enough space for the payload.")
 
+  echo "Injecting payload... " & $payload.len
   var bitIndex = 0
   for i in 0..<payload.len:
     for j in 0..<8:
@@ -139,6 +135,7 @@ proc encodeWav*(wav: Wav, plPath: string, newPath: string): Wav =
 
       bitIndex += 1
 
+  echo "Writing payload to wav.."
   # Write modified WAV data to a new file
   var nf: File # New wav file
   discard nf.open(newPath, fmWrite)
