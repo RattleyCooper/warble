@@ -6,10 +6,14 @@ type
     filename*: string
     dataPos*: int
     data*: seq[uint8]
+    audioFormat*: int
+    bitsPerSample*: int
+    bytesPerSample*: int
 
 proc isWav*(filepath: string): bool =
   ## Check for the RIFF header of a wav file and return
   ## true if it's found.
+  #
   let fs = newFileStream(filepath, fmRead)
   if fs == nil:
     echo "Could not open ", filepath
@@ -24,22 +28,23 @@ proc isWav*(filepath: string): bool =
 proc decodeWav*(wav: Wav): seq[uint8] =
   ## Decodes the payload embedded in the LSB of the WAV file's data chunk.
   ## Returns the decoded payload as a sequence of bytes.
+  #
   var bitIndex = 0
-  var payloadLenBytes: array[8, uint8]  # To store the 8-byte payload length
+  var payloadLenBytes: array[8, uint8]
   var payloadLen: int64 = 0
+  let bytesPerSample = wav.bytesPerSample
 
-  # Extract the payload length (8 bytes)
+  # Extract payload length (8 bytes)
   for i in 0..<8:
     for j in 0..<8:
-      let sampleIndex = bitIndex * 4  # Each sample is 4 bytes
-      var sample: float32
-      copyMem(addr sample, addr wav.data[sampleIndex], 4)  # Read float32 sample
-      let byteRep = cast[array[4, uint8]](sample)
-      let bit = byteRep[0] and 1  # Extract LSB of the least significant byte
-      payloadLenBytes[i] = (payloadLenBytes[i] shl 1) or bit  # Reconstruct byte
+      let sampleIndex = bitIndex * bytesPerSample
+      if sampleIndex + bytesPerSample > wav.data.len:
+        raise newException(ValueError, "Not enough data to read payload length.")
+      let firstByte = wav.data[sampleIndex]
+      let bit = firstByte and 1
+      payloadLenBytes[i] = (payloadLenBytes[i] shl 1) or bit
       bitIndex += 1
 
-  # Convert the 8-byte array to an int64
   copyMem(addr payloadLen, addr payloadLenBytes[0], 8)
 
   echo "Payload size: " & $payloadLen
@@ -48,20 +53,20 @@ proc decodeWav*(wav: Wav): seq[uint8] =
   var payload: seq[uint8] = newSeq[uint8](payloadLen)
   for i in 0..<payloadLen:
     for j in 0..<8:
-      let sampleIndex = bitIndex * 4  # Each sample is 4 bytes
-      var sample: float32
-      copyMem(addr sample, addr wav.data[sampleIndex], 4)  # Read float32 sample
-      let byteRep = cast[array[4, uint8]](sample)
-      let bit = byteRep[0] and 1  # Extract LSB of the least significant byte
-      payload[i] = (payload[i] shl 1) or bit  # Reconstruct byte
+      let sampleIndex = bitIndex * bytesPerSample
+      if sampleIndex + bytesPerSample > wav.data.len:
+        raise newException(ValueError, "Payload exceeds available data.")
+      let firstByte = wav.data[sampleIndex]
+      let bit = firstByte and 1
+      payload[i] = (payload[i] shl 1) or bit
       bitIndex += 1
 
   return payload
 
 proc extractWavData*(filename: string): Wav =
   ## Extract the payload from the given wav file.
-  ## 
-  result = Wav(filename: "", dataPos: 0, data: newSeq[uint8]())
+  #
+  result = Wav(filename: "", dataPos: 0, data: newSeq[uint8](), audioFormat: 1, bitsPerSample: 16, bytesPerSample: 2)
   result.filename = filename
 
   let fs = newFileStream(filename, fmRead)
@@ -71,30 +76,43 @@ proc extractWavData*(filename: string): Wav =
   defer: fs.close()
 
   var buffer: array[4, char]
-  fs.setPosition(12)  # Skip RIFF header (12 bytes: "RIFF", file size, "WAVE")
+  fs.setPosition(12)  # Skip RIFF header
   while not fs.atEnd():
-    discard fs.readData(addr buffer[0], 4)  # Read 4 bytes (chunk ID)
+    discard fs.readData(addr buffer[0], 4)
     let chunkId = buffer.join("")
 
     var chunkSize: int32
-    discard fs.readData(addr chunkSize, 4)  # Read 4-byte chunk size
-    
-    if chunkId == "data":
-      result.dataPos = fs.getPosition()
-      result.data = newSeq[uint8](chunkSize)
-      discard fs.readData(addr result.data[0], chunkSize)
-      return
+    discard fs.readData(addr chunkSize, 4)
 
-    fs.setPosition(fs.getPosition() + chunkSize)  # Skip to next chunk
+    if chunkId == "fmt ":
+      var fmtData: array[16, uint8]
+      discard fs.readData(addr fmtData[0], 16)
+      var audioFormat: int16
+      copyMem(addr audioFormat, addr fmtData[0], 2)
+      result.audioFormat = int(audioFormat)
+      var bitsPerSample: int16
+      copyMem(addr bitsPerSample, addr fmtData[14], 2)
+      result.bitsPerSample = int(bitsPerSample)
+      result.bytesPerSample = result.bitsPerSample div 8
+      let remainingChunkSize = int(chunkSize) - 16
+      if remainingChunkSize > 0:
+        fs.setPosition(fs.getPosition() + remainingChunkSize)
+    elif chunkId == "data":
+      result.dataPos = fs.getPosition()
+      result.data = newSeq[uint8](int(chunkSize))
+      discard fs.readData(addr result.data[0], int(chunkSize))
+      return
+    else:
+      fs.setPosition(fs.getPosition() + int(chunkSize))
   raise newException(IOError, "No data chunk found")
 
 proc profileWav*(wavPath: string): int64 =
-  ## Calculates the amount of data (in bytes) that can be stored inside a 32-bit WAV file.
+  ## Calculates the amount of data (in bytes) that can be stored inside a WAV file.
   ## Reserves 8 bytes for an int64 length header.
-  ##
+  #
   var w = extractWavData(wavPath)
-  let totalBits = w.data.len div 4
-  let availableBits = totalBits - 64
+  let totalSamples = w.data.len div w.bytesPerSample
+  let availableBits = totalSamples - 64  # 64 bits for the header
   if availableBits < 0:
     raise newException(ValueError, "WAV file is too small to store the length header.")
 
@@ -102,74 +120,67 @@ proc profileWav*(wavPath: string): int64 =
   echo "Data Cap: ", result
 
 proc encodeWav*(wav: Wav, plPath: string, newPath: string): Wav =
+  ## Encode a payload into the LSB of each sample of a Wav file
+  #
   var f: File
   discard f.open(plPath, fmRead)
   defer: f.close()
 
-  echo "Payload size: " & $f.getFileSize
-  # Create the payload with the length of the payload 
-  # added to the beginning of the payload bytes.
+  echo "Payload size: " & $f.getFileSize()
   var dataLen: int64 = f.getFileSize()
   var dataLenSeq: seq[uint8] = newSeq[uint8](8)
-  copyMem(addr dataLenSeq[0], unsafeAddr dataLen, sizeOf(dataLen))
+  copyMem(addr dataLenSeq[0], unsafeAddr dataLen, sizeof(dataLen))
   var payload: seq[uint8]
-  payload.add dataLenSeq
+  payload.add(dataLenSeq)
 
   echo "Reading payload..."
   var pdat = newSeq[uint8](f.getFileSize())
   discard f.readBytes(pdat, 0, f.getFileSize())
-  payload.add pdat
+  payload.add(pdat)
 
-  if payload.len * 8 > wav.data.len div 4:  # 32-bit samples (4 bytes per sample)
+  let totalSamples = wav.data.len div wav.bytesPerSample
+  if (payload.len * 8) > totalSamples:
     raise newException(ValueError, "Not enough space for the payload.")
 
   echo "Injecting payload... " & $payload.len
   var bitIndex = 0
+  let bytesPerSample = wav.bytesPerSample
   for i in 0..<payload.len:
     for j in 0..<8:
       let bit = (payload[i] shr (7 - j)) and 1
-      let sampleIndex = bitIndex * 4  # Each sample is 4 bytes
-
-      # Convert 4 bytes into a float32
-      var sample: float32
-      copyMem(addr sample, addr wav.data[sampleIndex], 4)  # Read float32
-
-      # Modify the LSB of the last byte (least significant)
-      var byteRep = cast[array[4, uint8]](sample)
-      byteRep[0] = (byteRep[0] and 0xFE) or bit  # Modify LSB of least significant byte
-
-      # Store modified sample back
-      sample = cast[float32](byteRep)
-      copyMem(addr wav.data[sampleIndex], addr sample, 4)
-
+      let sampleIndex = bitIndex * bytesPerSample
+      if sampleIndex >= wav.data.len:
+        raise newException(ValueError, "Sample index exceeds data length.")
+      # Modify the first byte of the sample
+      wav.data[sampleIndex] = (wav.data[sampleIndex] and 0xFE) or uint8(bit)
       bitIndex += 1
 
   echo "Writing payload to wav.."
   # Write modified WAV data to a new file
-  var nf: File # New wav file
+  var nf: File
   discard nf.open(newPath, fmWrite)
   defer: nf.close()
 
-  var olf: File # Old wav file
+  var olf: File
   discard olf.open(wav.filename, fmRead)
   defer: olf.close()
 
-  # Write the header/fmt chunk to the new wav file
-  var preData = newSeq[uint8](wav.dataPos + 1)
-  discard olf.readBytes(preData, 0, wav.dataPos + 1)
-  discard nf.writeBytes(preData, 0, preData.len - 1)
+  # Write the header up to data chunk
+  var preData = newSeq[uint8](wav.dataPos)
+  olf.setFilePos(0)
+  discard olf.readBytes(preData, 0, wav.dataPos)
+  discard nf.writeBytes(preData, 0, preData.len)
   
-  # Write the data chunk to new wav file.
+  # Write the modified data chunk
   discard nf.writeBytes(wav.data, 0, wav.data.len)
 
-  # Check for data after the data chunk and
-  # write it to the new wav file if it exists
-  let fs = olf.getFileSize()
-  if fs > wav.dataPos + wav.data.len + 1:
-    let remainder = fs - (wav.dataPos + 1 + wav.data.len)
-    var rBytes = newSeq[uint8](remainder)
-    olf.setFilePos(olf.getFileSize - remainder - 1)
-    discard olf.readBytes(rBytes, 0, remainder)
-    discard nf.writeBytes(rBytes, 0, rBytes.len)
-  return wav
+  # Write remaining data after the data chunk if any
+  let remainingStart = wav.dataPos + wav.data.len
+  olf.setFilePos(remainingStart)
+  let remainingBytes = olf.getFileSize() - remainingStart
+  if remainingBytes > 0:
+    var remainder = newSeq[uint8](remainingBytes)
+    discard olf.readBytes(remainder, 0, remainingBytes)
+    discard nf.writeBytes(remainder, 0, remainingBytes)
 
+  return wav
