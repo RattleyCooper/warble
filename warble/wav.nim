@@ -1,4 +1,5 @@
-import streams, strutils
+from streams import newFileStream, readDataStr, close, atEnd, readData, setPosition, getPosition
+from strutils import join
 
 type
   Wav = ref object
