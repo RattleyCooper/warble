@@ -1,4 +1,4 @@
-import pixie
+from pixie import Image, readImage, writeFile
 
 proc encodeData*(image: Image, data: seq[uint8]) =
   ## Hide data inside an image
