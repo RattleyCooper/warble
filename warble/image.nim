@@ -3,80 +3,78 @@ from pixie import Image, readImage, writeFile
 proc encodeData*(image: Image, data: seq[uint8]) =
   ## Hide data inside an image
   #
+  # Prepend the data length (8 bytes) to the data.
+  var dataLen: int64 = data.len
+  let total = 8 + data.len
+  var ndata = newSeq[uint8](total)
+  copyMem(addr ndata[0], unsafeAddr dataLen, sizeOf(dataLen))
+  ndata[8..<total] = data
 
-  # Prepend the data length to the data.
-  var dataLen: int64 = data.len()
-  var dataLenSeq: seq[uint8] = newSeq[uint8](8)
-  copyMem(addr dataLenSeq[0], unsafeAddr dataLen, sizeOf(dataLen))
-  var ndata: seq[uint8]
-  ndata.add dataLenSeq
-  ndata.add data
+  # Encode every byte into two image pixels.
+  for i in 0..<total:
+    let dataByte = ndata[i]
+    let pixIndex = i shl 1  # equivalent to i*2
+    var c1 = image.data[pixIndex]
+    var c2 = image.data[pixIndex + 1]
 
-  # Encode all of the data
-  for i in 0..ndata.len-1:
-    var dataByte: uint8 = ndata[i]
-    if i >= ndata.len:
-      break
-    var
-      c1 = image.data[i*2+0]
-      c2 = image.data[i*2+1]
-    c1.r = (c1.r and 0b11111000) + (dataByte and 0b00000001) shr 0
-    c1.g = (c1.g and 0b11111100) + (dataByte and 0b0000110) shr 1
-    c1.b = (c1.b and 0b11111000) + (dataByte and 0b0001000) shr 3
+    # Embed the lower bits into c1, upper bits into c2.
+    c1.r = (c1.r and 0xF8) or (dataByte and 0x01)
+    c1.g = (c1.g and 0xFC) or ((dataByte shr 1) and 0x03)
+    c1.b = (c1.b and 0xF8) or ((dataByte shr 3) and 0x01)
+    c2.r = (c2.r and 0xF8) or ((dataByte shr 4) and 0x03)
+    c2.g = (c2.g and 0xFC) or ((dataByte shr 6) and 0x01)
+    c2.b = (c2.b and 0xF8) or ((dataByte shr 7) and 0x01)
+
     c1.a = 255
-    c2.r = (c2.r and 0b11111000) + (dataByte and 0b00110000) shr 4
-    c2.g = (c2.g and 0b11111100) + (dataByte and 0b01000000) shr 6
-    c2.b = (c2.b and 0b11111000) + (dataByte and 0b10000000) shr 7
     c2.a = 255
-    image.data[i*2+0] = c1
-    image.data[i*2+1] = c2
+
+    image.data[pixIndex] = c1
+    image.data[pixIndex + 1] = c2
 
 proc decodeData*(image: Image): seq[uint8] =
-  ## Extract hidden data in the image
+  ## Extract hidden data from the image
   #
-
-  # Extract the data's length.
+  # Extract the 8-byte data length.
   var dataLen: int64
-  var dataLenBytes: seq[uint8] = newSeq[uint8](8)
-  for i in 0..7:
-    var dataByte: uint8
-    let
-      c1 = image.data[i*2+0]
-      c2 = image.data[i*2+1]
-    dataByte += (c1.r and 0b1) shl 0
-    dataByte += (c1.g and 0b11) shl 1
-    dataByte += (c1.b and 0b1) shl 3
-    dataByte += (c2.r and 0b11) shl 4
-    dataByte += (c2.g and 0b1) shl 6
-    dataByte += (c2.b and 0b1) shl 7
+  var dataLenBytes = newSeq[uint8](8)
+  for i in 0..<8:
+    let pixIndex = i shl 1
+    let c1 = image.data[pixIndex]
+    let c2 = image.data[pixIndex + 1]
+    var byte: uint8 = 0
+    byte = ((c1.r and 1)       shl 0) or
+           ((c1.g and 3)       shl 1) or
+           ((c1.b and 1)       shl 3) or
+           ((c2.r and 3)       shl 4) or
+           ((c2.g and 1)       shl 6) or
+           ((c2.b and 1)       shl 7)
+    dataLenBytes[i] = byte
 
-    dataLenBytes[i] = dataByte
-  
-  copyMem(addr dataLen, unsafeAddr dataLenBytes[0], sizeof(dataLen))
+  copyMem(unsafeAddr dataLen, addr dataLenBytes[0], sizeOf(dataLen))
+  echo "Data Length: ", dataLen
 
-  # Extract data from image.
-  for i in 8..<(image.data.len):
-    var dataByte: uint8
-    let
-      c1 = image.data[i*2+0]
-      c2 = image.data[i*2+1]
-    dataByte += (c1.r and 0b1) shl 0
-    dataByte += (c1.g and 0b11) shl 1
-    dataByte += (c1.b and 0b1) shl 3
-    dataByte += (c2.r and 0b11) shl 4
-    dataByte += (c2.g and 0b1) shl 6
-    dataByte += (c2.b and 0b1) shl 7
+  # Preallocate the result with the exact data length.
+  result = newSeq[uint8](dataLen)
+  for i in 0..<dataLen:
+    let pixIndex = (i + 8) shl 1  # start after the 8 length bytes
+    let c1 = image.data[pixIndex]
+    let c2 = image.data[pixIndex + 1]
+    var byte: uint8 = 0
+    byte = ((c1.r and 1)       shl 0) or
+           ((c1.g and 3)       shl 1) or
+           ((c1.b and 1)       shl 3) or
+           ((c2.r and 3)       shl 4) or
+           ((c2.g and 1)       shl 6) or
+           ((c2.b and 1)       shl 7)
+    result[i] = byte
 
-    if result.len >= dataLen:
-      break
-        
-    result.add(dataByte)
+  return result
 
 proc profileImage*(image: Image): int64 =
   ## The amount of bytes can be stored inside an image.
   #
   let totalBits = image.width * image.height * 3
-  let availableBits = totalBits - 64 # int64
+  let availableBits = totalBits - 64
 
   if availableBits < 0:
     raise newException(ValueError, "Image is too small to store the length header.")
