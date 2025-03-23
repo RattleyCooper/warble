@@ -2,10 +2,10 @@ from streams import newFileStream, readDataStr, close, atEnd, readData, setPosit
 from strutils import join
 
 type
-  Wav = ref object
-    filename: string
-    dataPos: int
-    data: seq[uint8]
+  Wav* = ref object
+    filename*: string
+    dataPos*: int
+    data*: seq[uint8]
 
 proc isWav*(filepath: string): bool =
   ## Check for the RIFF header of a wav file and return
