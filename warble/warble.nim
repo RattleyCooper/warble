@@ -8,6 +8,7 @@ import image
 import os
 import parseopt
 
+import timeit
 
 const HelpMessage = """
            __   __        ___ 
