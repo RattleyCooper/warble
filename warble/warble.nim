@@ -5,10 +5,8 @@
 
 import wav
 import image
-import os
-import parseopt
-
-import timeit
+from os import expandTilde
+from parseopt import getopt
 
 const HelpMessage = """
            __   __        ___ 
